@@ -1,0 +1,326 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>International Business Midterm Jeopardy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one-screen classroom board. Header, 5x7 tile grid, team scoreboard. Clue opens as a full-screen overlay sized for screen sharing. */
+:root{
+  --ground:#07123a;      /* board backdrop */
+  --panel:#0e2175;       /* tiles and cards */
+  --panel-hi:#1a36a8;    /* hovered tile */
+  --line:#2a43a6;
+  --gold:#f6c744;        /* values and highlights */
+  --ink:#f3f6ff;
+  --ink-soft:#a9b8ee;
+  --good:#3ddc97;
+  --bad:#ff6b6b;
+  --used:#0a1a52;
+  --display:'Oswald','Arial Narrow',Impact,sans-serif;
+  --body:'Source Sans 3','Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;padding-inline:clamp(16px,2vw,32px);padding-block:14px 24px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{display:flex;gap:12px 24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.4rem,2.6vw,2.2rem);letter-spacing:.08em;text-transform:uppercase;margin:0;text-wrap:balance}
+h1 small{display:block;font-family:var(--body);font-weight:600;font-size:.8rem;letter-spacing:.12em;color:var(--ink-soft);margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 14px;font-weight:600}
+.btn:hover{background:var(--panel-hi)}
+.btn.gold{background:var(--gold);color:#241a00;border-color:var(--gold)}
+.btn.gold:hover{background:#ffd966}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn[disabled]{opacity:.45;cursor:default}
+.boardwrap{overflow-x:auto}
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;min-width:720px}
+.cat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:clamp(56px,8vh,80px)}
+.cat b{font-family:var(--display);font-weight:700;font-size:clamp(.95rem,1.5vw,1.35rem);letter-spacing:.04em;text-transform:uppercase;line-height:1.15;text-wrap:balance}
+.cat span{font-size:.78rem;color:var(--gold);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;font-family:var(--display);font-weight:700;font-size:clamp(1.3rem,2.6vw,2.4rem);color:var(--gold);min-height:clamp(40px,7.5vh,72px);font-variant-numeric:tabular-nums;transition:background .12s}
+.tile:hover{background:var(--panel-hi)}
+.tile.used{background:var(--used);border-color:transparent;color:transparent;cursor:default}
+.tile.used:hover{background:var(--used)}
+.pick{margin:14px 0 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--ink-soft)}
+.pick b{color:var(--gold);font-family:var(--display);letter-spacing:.06em;font-size:1.15rem;text-transform:uppercase}
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.team{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.team.turn{border-color:var(--gold)}
+.team input.nm{background:transparent;border:0;border-bottom:1px dashed var(--line);color:var(--ink);font-family:var(--display);font-weight:500;font-size:1.05rem;letter-spacing:.05em;text-transform:uppercase;width:100%;padding:2px 0;min-width:0}
+.score{font-family:var(--display);font-weight:700;font-size:clamp(1.8rem,3.2vw,2.8rem);font-variant-numeric:tabular-nums;line-height:1.1}
+.score.neg{color:var(--bad)}
+.adj{display:flex;gap:6px}
+.adj button{flex:1;background:var(--used);border:1px solid var(--line);border-radius:4px;padding:2px 0;font-size:.85rem;color:var(--ink-soft)}
+.adj button:hover{background:var(--panel-hi);color:var(--ink)}
+.turnbtn{font-size:.75rem;background:none;border:0;color:var(--ink-soft);text-align:left;padding:0;text-decoration:underline}
+.setup{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--ink-soft);font-size:.9rem;flex-wrap:wrap}
+/* overlay */
+.ov{position:fixed;inset:0;background:var(--ground);z-index:10;overflow-y:auto;padding-inline:clamp(16px,4vw,64px);padding-block:max(18px,env(safe-area-inset-top,0px)) 28px;display:flex;flex-direction:column;gap:18px}
+.ov[hidden]{display:none}
+.ovhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tag{font-family:var(--display);color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-size:1.2rem}
+.timer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.clock{font-family:var(--display);font-weight:700;font-size:2.4rem;min-width:3.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.clock.low{color:var(--bad)}
+.bar{height:8px;background:var(--used);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--gold);transition:width .25s linear}
+.kind{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);font-size:1rem}
+.q{font-size:clamp(1.6rem,3.4vw,3rem);font-weight:600;line-height:1.28;max-width:62ch;margin:0;text-wrap:pretty}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px;max-width:1200px}
+.opt{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:14px 16px;font-size:clamp(1.15rem,2.2vw,1.8rem);line-height:1.3;text-align:left;cursor:default;min-width:0}
+.opt .l{font-family:var(--display);font-weight:700;color:var(--gold);min-width:1.2ch}
+.opt.tfopt{justify-content:center;font-family:var(--display);font-weight:700;letter-spacing:.1em;font-size:clamp(1.6rem,3vw,2.6rem)}
+.opt.right{border-color:var(--good);background:#0d3b3c}
+.opt.right .l{color:var(--good)}
+.opt.dim{opacity:.4}
+.award{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;max-width:1200px}
+.arow{display:flex;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.arow span{flex:1;font-family:var(--display);letter-spacing:.04em;text-transform:uppercase;overflow-wrap:anywhere}
+.arow button{border-radius:6px;border:1px solid var(--line);background:var(--used);padding:6px 10px;font-weight:700;font-variant-numeric:tabular-nums}
+.arow button.on.up{background:var(--good);color:#042;border-color:var(--good)}
+.arow button.on.dn{background:var(--bad);color:#300;border-color:var(--bad)}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.wager{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;max-width:1200px}
+.wager label{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-family:var(--display);letter-spacing:.04em;text-transform:uppercase}
+.wager input{font:inherit;font-family:var(--body);font-size:1.4rem;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--ground);color:var(--ink);width:100%}
+.wager small{font-family:var(--body);text-transform:none;letter-spacing:0;color:var(--ink-soft)}
+.winner{font-family:var(--display);font-size:clamp(1.6rem,3vw,2.6rem);color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+.key{max-width:1000px;display:flex;flex-direction:column;gap:16px}
+.key h3{font-family:var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;font-size:1.2rem}
+.key ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:10px}
+.key .ka{color:var(--good);font-weight:700}
+.key .kq{overflow-wrap:anywhere}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head><body>
+<div class="top">
+  <h1>International Business Midterm Review<small>MAN4602 · Chapters 1, 3, 4, 5 and 8 · Questions taken word for word from the test banks</small></h1>
+  <div class="tools">
+    <button class="btn" id="keyBtn">Answer key</button>
+    <button class="btn gold" id="finalBtn">Final Jeopardy</button>
+    <button class="btn danger" id="resetBtn">Reset game</button>
+  </div>
+</div>
+
+<div class="boardwrap"><div class="board" id="board"></div></div>
+
+<div class="pick">Next team to pick: <b id="pickName"></b> <span style="font-size:.85rem">(click “pick next” on a team to change)</span></div>
+<div class="teams" id="teams"></div>
+<div class="setup">
+  <span>Teams:</span>
+  <button class="btn" id="tMinus" aria-label="Remove a team">−</button>
+  <button class="btn" id="tPlus" aria-label="Add a team">+</button>
+  <label for="tsec">Time per clue</label>
+  <select id="tsec" class="btn"><option value="30">30 s</option><option value="45">45 s</option><option value="60" selected>60 s</option><option value="90">90 s</option></select>
+  <span>Click a team name to rename it.</span>
+</div>
+
+<div class="ov" id="ov" hidden role="dialog" aria-modal="true" aria-label="Clue"></div>
+
+<script>
+const DATA = {"cats": [{"ch": "Ch. 1", "name": "Globalization", "clues": [{"t": "tf", "q": "Exports are goods and services purchased abroad and brought into a country.", "a": 1, "v": 100}, {"t": "mc", "q": "________ involves the idea that a nation-state is autonomous, cannot intervene in the affairs of other nations, and can enter into binding international agreements.", "o": ["National sovereignty", "Authoritarianism", "Cultural liberalism", "Communalism"], "a": 0, "v": 200}, {"t": "mc", "q": "Opponents argue that globalization ________.", "o": ["eliminates manufacturing jobs in developed nations", "generates labor market flexibility in developed nations", "brings an end to practices like outsourcing", "reduces the employment rate in developing nations"], "a": 0, "v": 300}, {"t": "mc", "q": "Supporters affirm that globalization ________.", "o": ["brings an end to practices like outsourcing", "causes worker dislocation that gradually lowers wages", "increases wealth and efficiency in all countries", "curbs market flexibility in developed nations"], "a": 2, "v": 400}, {"t": "mc", "q": "The dispersal of manufacturing activities by the company indicates ________.", "o": ["customization of products", "niche marketing", "globalization of markets", "globalization of production"], "a": 3, "v": 500}, {"t": "mc", "q": "Olive oil prepared in a small Italian oil press factory and sold by large supermarkets in the United States is an example of a ________.", "o": ["net national product", "US export", "US import", "gross domestic product"], "a": 2, "v": 600}, {"t": "mc", "q": "To minimize the economic inequality within developing nations, studies suggest that the nations can boost incomes of their poorest citizens by ________.", "o": ["rejecting globalization and sheltering themselves from exploitation", "embracing globalization and integrating themselves into the global economy", "fortifying trade barriers and discouraging exports", "encouraging economic independence and restricting imports"], "a": 1, "v": 700}]}, {"ch": "Ch. 3", "name": "Culture", "clues": [{"t": "tf", "q": "Hispanics comprise a subculture in the United States.", "a": 0, "v": 100}, {"t": "mc", "q": "Folk customs that spread by cultural diffusion to other regions develop into ________.", "o": ["trash culture", "traditions", "popular customs", "superstitions"], "a": 2, "v": 200}, {"t": "mc", "q": "According to Hofstede's framework, people generally prefer little consultation between superiors and subordinates in cultures where ________ is high.", "o": ["power distance", "fatalism", "individualism", "self-actualization"], "a": 0, "v": 300}, {"t": "mc", "q": "________ facilitate(s) the process of cultural imperialism.", "o": ["Strict product liability laws", "Relaxed trade and investment barriers", "Technological stagnation", "Social media censorship"], "a": 1, "v": 400}, {"t": "mc", "q": "Over the last ten years, nearly 90% of medical graduates from Konesia have left the country for higher-paying jobs in the United States. What phenomenon has Konesia been witnessing?", "o": ["Vested outsourcing", "Brain drain", "Redeployment", "Repatriation"], "a": 1, "v": 500}, {"t": "mc", "q": "Reverse brain drain is the process by which ________.", "o": ["manual laborers migrate from low-income countries to high-income countries", "professionals are lured back to their homeland", "students from Europe choose to enroll themselves in American universities", "companies in high-income countries hire people from low-income countries to fill white-collar positions"], "a": 1, "v": 600}, {"t": "mc", "q": "International businesspeople need to understand social stratification systems where they do business because ________.", "o": ["such systems reflect a culture's willingness to accept new products", "such systems indicate who people in a given culture will likely respect more", "the high similarity among countries lets firms effectively use global hiring practices", "what is an ascribed group membership in one country is an acquired one in another"], "a": 1, "v": 700}]}, {"ch": "Ch. 4", "name": "Political & Legal Systems", "clues": [{"t": "tf", "q": "Islamic law is the most widely practiced theocratic legal system today.", "a": 0, "v": 100}, {"t": "mc", "q": "________ is a political system in which political leaders rely on military and bureaucratic power to support their rule.", "o": ["Secular totalitarianism", "Secular anarchism", "Theocratic totalitarianism", "Theocratic pluralism"], "a": 0, "v": 200}, {"t": "mc", "q": "In a command economy, the goods and services that a country produces, the quantity in which they are produced, and the prices at which they are sold are planned by ________.", "o": ["government officials", "private industries", "individual entrepreneurs", "local trade associations"], "a": 0, "v": 300}, {"t": "mc", "q": "On a recent trip to Hong Kong, a group of tourists found several Prada bags being sold on the pavement. They cost only a few dollars and were clearly fake; though they bore the Prada trademark. This is an example of ________.", "o": ["piracy", "monopolization", "ethnocentrism", "nationalization"], "a": 0, "v": 400}, {"t": "mc", "q": "Central planning is rooted in the ideology that ________.", "o": ["the welfare of a group is more important than individual well-being", "individual concerns should be placed above group consensus", "individual and group concerns are just as important as government concerns", "privatization will enhance a country's economic well-being"], "a": 0, "v": 500}, {"t": "mc", "q": "Which of the following is the underlying principle of socialism?", "o": ["The welfare of individuals far outweighs the welfare of society.", "Collective welfare of people outweighs the welfare of the individual.", "Capital and wealth should be vested in the hands of few and used primarily as a means of profit.", "The state should protect itself from individual and group interests."], "a": 1, "v": 600}, {"t": "mc", "q": "Which of the following statements referring to intellectual property rights and violations is INCORRECT?", "o": ["Richer countries claim looser regulation of intellectual property rights will hinder innovation.", "Companies can register a global patent, trademark, or copyright through the World Trade Organization (WTO).", "The International Anti-Counterfeiting Coalition estimates international trade in counterfeit products at $600 billion a year.", "Developing markets claim tougher regulation of IPRs will slow, if not halt, their economic development."], "a": 1, "v": 700}]}, {"ch": "Ch. 5", "name": "Government & Trade", "clues": [{"t": "tf", "q": "Nationalization describes government seizure of an entire industry, with or without compensation.", "a": 0, "v": 100}, {"t": "mc", "q": "A country that has recently increased the portion of its national production and exports derived from industrial operations is called a(n) ________.", "o": ["less than developed country", "developing country", "emerging market", "developed country"], "a": 2, "v": 200}, {"t": "mc", "q": "Local content regulations are primarily intended to ________.", "o": ["address cultural differences between local employees and expatriates", "encourage MNEs to increase production activities in a country", "address contract negotiation difficulties", "assess local tax rates on MNEs"], "a": 1, "v": 300}, {"t": "mc", "q": "Had the government taken over the assets of Global Trading without compensation, and not taken over the assets of any other company, the government's actions would be an example of ________.", "o": ["expropriation", "confiscation", "nationalization", "communism"], "a": 1, "v": 400}, {"t": "mc", "q": "Had the government taken over (with compensation) the assets of Global Trading but not those of any other company, the government's actions would be an example of ________.", "o": ["expropriation", "nationalization", "confiscation", "communism"], "a": 0, "v": 500}, {"t": "mc", "q": "Gross national income (GNI), the broadest measure of economic activity for a country, is defined as the ________.", "o": ["total of all consumption and investment that takes place in a national economy", "income generated in one country, regardless of who owns the productive assets", "total of all economic activity in one country less services, such as government administration, health services, and education", "income generated by both total domestic production and the international production activities of national companies"], "a": 3, "v": 600}, {"t": "mc", "q": "Which of the following statements is TRUE about the political risks in a global marketing environment?", "o": ["The political risk of low-income countries is lesser than high-income countries.", "The more a country is developed, the greater is the political risk.", "Political risk is a major deterrent for companies that want to invest abroad.", "A country with high political risks attracts more investors."], "a": 2, "v": 700}]}, {"ch": "Ch. 8", "name": "Foreign Direct Investment", "clues": [{"t": "tf", "q": "Foreign direct investment is acquisition of foreign assets for the purpose of controlling them.", "a": 0, "v": 100}, {"t": "mc", "q": "Exports and imports of tourism and business consulting are included in the ________ account of a country's balance of payments.", "o": ["current", "merchandise", "capital", "savings"], "a": 0, "v": 200}, {"t": "mc", "q": "Partnerships between a government and a host company in the context of foreign direct investment can lead to ________.", "o": ["increased exploitation of workers in the home country", "domination of industries in the home country by large international firms", "increased market access for the host company", "increased control for the host country over its operations"], "a": 2, "v": 300}, {"t": "mc", "q": "Home nations discourage foreign direct investment outflows because it ________.", "o": ["discourages cooperation between countries", "replaces jobs in the home nation", "fails to protect the \"sunset\" industries in the home nation", "decreases long-term competitiveness of companies"], "a": 1, "v": 400}, {"t": "mc", "q": "If a Japanese citizen invests in the Australian stock market, the transaction will show up on the capital account in the balance of payments of ________.", "o": ["Japan", "Australia", "both Japan and Australia", "neither Japan nor Australia"], "a": 2, "v": 500}, {"t": "mc", "q": "Which of the following methods is being used when a host country provides lower tax rates and low-interest loans to firms from abroad for encouraging inflows of foreign direct investment?", "o": ["Financial incentives", "Sanctions", "Local content requirements", "Embargoes"], "a": 0, "v": 600}, {"t": "mc", "q": "Which of the following is an example of a greenfield investment?", "o": ["An agricultural business acquisition in South-east Asia's former agricultural region", "The construction of an entirely new steel manufacturing subsidiary overseas", "A merger between a U.S. and a non-U.S. company", "The purchase of an existing business that is still in its infancy"], "a": 1, "v": 700}]}], "final": {"q": "Jeans Unlimited plans to set up new facilities that are designed specifically to reduce its impact on the environment. Management emphasizes recycling and reusing resources. What concept is the company emphasizing?", "o": ["Sustainability", "Standardization", "Ethnocentricity", "Industrialization"], "a": 0, "ch": "Ch. 1", "name": "Globalization"}};
+const KEY='ib-midterm-jeopardy-v1';
+const L='ABCD';
+let S = {teams:[],used:{},turn:0,secs:60};
+function load(){
+  try{const r=localStorage.getItem(KEY); if(r){const o=JSON.parse(r); if(o&&o.teams&&o.teams.length) S=Object.assign(S,o);}}catch(e){}
+  if(!S.teams.length) S.teams=[1,2,3,4].map(i=>({name:'Team '+i,score:0}));
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;};
+
+const startMusic=()=>{},stopMusic=()=>{},buzz=()=>{},chime=()=>{};
+const money=n=>(n<0?'−$':'$')+Math.abs(n).toLocaleString('en-US');
+
+function renderBoard(){
+  const b=$('board'); b.replaceChildren();
+  DATA.cats.forEach(c=>{const h=el('div','cat'); h.append(el('span',null,c.ch), el('b',null,c.name)); b.append(h);});
+  for(let r=0;r<7;r++) DATA.cats.forEach((c,ci)=>{
+    const k=ci+'-'+r, cl=c.clues[r];
+    const t=el('button','tile'+(S.used[k]?' used':''), S.used[k]?'':'$'+cl.v);
+    t.disabled=!!S.used[k];
+    t.setAttribute('aria-label',c.name+' for $'+cl.v+(S.used[k]?' (used)':''));
+    t.onclick=()=>openClue(ci,r);
+    b.append(t);
+  });
+}
+function renderTeams(){
+  const w=$('teams'); w.replaceChildren();
+  S.teams.forEach((t,i)=>{
+    const d=el('div','team'+(i===S.turn?' turn':''));
+    const nm=el('input','nm'); nm.value=t.name; nm.setAttribute('aria-label','Team '+(i+1)+' name');
+    nm.oninput=()=>{t.name=nm.value; save(); $('pickName').textContent=S.teams[S.turn].name;};
+    const sc=el('div','score'+(t.score<0?' neg':''),money(t.score));
+    const adj=el('div','adj');
+    [[-100,'−100'],[100,'+100']].forEach(([v,l])=>{const b=el('button',null,l); b.setAttribute('aria-label',l+' points for '+t.name); b.onclick=()=>{t.score+=v; save(); renderTeams();}; adj.append(b);});
+    const pk=el('button','turnbtn','pick next'); pk.onclick=()=>{S.turn=i; save(); renderTeams();};
+    d.append(nm,sc,adj,pk); w.append(d);
+  });
+  $('pickName').textContent=S.teams[S.turn].name;
+}
+
+/* ---------- clue overlay ---------- */
+let tick=null, applied={}, cur=null;
+const ov=$('ov');
+function stopTimer(){clearInterval(tick); tick=null; stopMusic();}
+function timerBox(){
+  const box=el('div','timer'); const clock=el('div','clock'); const go=el('button','btn','Start timer'); const stop=el('button','btn','Pause');
+  let left=S.secs; const bar=el('div','bar'); const fill=el('i'); bar.append(fill);
+  const draw=()=>{clock.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0'); clock.classList.toggle('low',left<=10&&left>0); fill.style.width=(left/S.secs*100)+'%';};
+  draw();
+  go.onclick=()=>{stopTimer(); if(left<=0) left=S.secs; draw(); startMusic(); tick=setInterval(()=>{left--; draw(); if(left<=0){stopTimer(); clock.textContent="Time!"; buzz();}},1000);};
+  stop.onclick=stopTimer;
+  box.append(clock,go,stop);
+  return {box,bar};
+}
+function optsEl(c, revealed){
+  const wrap=el('div','opts');
+  const items = c.t==='tf'?['TRUE','FALSE']:c.o;
+  items.forEach((txt,i)=>{
+    const o=el('div','opt'+(c.t==='tf'?' tfopt':'')+(revealed?(i===c.a?' right':' dim'):''));
+    if(c.t!=='tf') o.append(el('span','l',L[i]+'.'));
+    o.append(el('span',null,(revealed&&i===c.a?'✓ ':'')+txt));
+    wrap.append(o);
+  });
+  return wrap;
+}
+function openClue(ci,r){
+  const cat=DATA.cats[ci], c=cat.clues[r]; cur={ci,r,c};
+  applied={}; let revealed=false;
+  const build=()=>{
+    stopTimerKeep();
+    ov.replaceChildren();
+    const head=el('div','ovhead');
+    head.append(el('div','tag',cat.ch+' · '+cat.name+' · $'+c.v));
+    const tm=timerBox(); head.append(tm.box);
+    ov.append(head, tm.bar);
+    ov.append(el('div','kind', c.t==='tf'?'True or false?':'Choose the best answer'));
+    ov.append(el('p','q',c.q));
+    ov.append(optsEl(c,revealed));
+    const acts=el('div','acts');
+    const rv=el('button','btn gold',revealed?'Hide answer':'Show answer'); rv.onclick=()=>{revealed=!revealed; keep=tm; rebuildKeepTimer();};
+    const cl=el('button','btn','Close clue'); cl.onclick=()=>closeClue(true);
+    acts.append(rv,cl); ov.append(acts);
+    const aw=el('div','award');
+    S.teams.forEach((t,i)=>{
+      const row=el('div','arow'); row.append(el('span',null,t.name));
+      const up=el('button','up'+(applied[i]===1?' on':''),'+'+c.v), dn=el('button','dn'+(applied[i]===-1?' on':''),'−'+c.v);
+      up.className='up'+(applied[i]===1?' on up':''); dn.className='dn'+(applied[i]===-1?' on dn':'');
+      const set=v=>{const prev=applied[i]||0, nv=(prev===v)?0:v; if(nv===1)chime(); t.score+=(nv-prev)*c.v; applied[i]=nv; save(); renderTeams(); refreshAward();};
+      up.onclick=()=>set(1); dn.onclick=()=>set(-1);
+      row.append(up,dn); aw.append(row);
+    });
+    ov.append(aw);
+  };
+  /* rebuild without resetting the running timer: re-render only the changeable parts */
+  let keep=null;
+  function stopTimerKeep(){}
+  function rebuildKeepTimer(){ // simple approach: swap answer state in place
+    const q=ov.querySelector('.opts'); q.replaceWith(optsEl(c,revealed));
+    ov.querySelector('.acts .gold').textContent=revealed?'Hide answer':'Show answer';
+  }
+  function refreshAward(){
+    const rows=ov.querySelectorAll('.arow');
+    rows.forEach((row,i)=>{const b=row.querySelectorAll('button'); b[0].className='up'+(applied[i]===1?' on up':''); b[1].className='dn'+(applied[i]===-1?' on dn':'');});
+  }
+  build();
+  ov.hidden=false; ov.scrollTop=0;
+}
+function closeClue(markUsed){
+  stopTimer(); ov.hidden=true; ov.replaceChildren();
+  if(markUsed&&cur){S.used[cur.ci+'-'+cur.r]=true; S.turn=(S.turn+1)%S.teams.length; save(); renderBoard(); renderTeams();}
+  cur=null;
+}
+
+/* ---------- final jeopardy ---------- */
+function openFinal(){
+  const f=DATA.final; stopTimer(); ov.hidden=false; ov.scrollTop=0;
+  let wagers=S.teams.map(()=>0), fapplied={}, stage='wager';
+  const render=()=>{
+    stopTimer(); ov.replaceChildren();
+    const head=el('div','ovhead'); head.append(el('div','tag','Final Jeopardy · '+f.ch+' · '+f.name));
+    const close=el('button','btn','Back to board'); close.onclick=()=>{stopTimer(); ov.hidden=true; ov.replaceChildren();};
+    head.append(close); ov.append(head);
+    if(stage==='wager'){
+      ov.append(el('p','q','Final Jeopardy. Category: '+f.name+'. Each team writes a wager before seeing the clue.'));
+      const w=el('div','wager');
+      S.teams.forEach((t,i)=>{
+        const lab=el('label'); lab.append(el('span',null,t.name));
+        const inp=el('input'); inp.type='number'; inp.min=0; inp.max=Math.max(t.score,0); inp.value=wagers[i]; inp.id='wg'+i; inp.inputMode='numeric';
+        inp.oninput=()=>{let v=parseInt(inp.value,10)||0; wagers[i]=Math.max(0,Math.min(v,Math.max(t.score,0)));};
+        lab.append(inp, el('small',null,'Can wager $0 to '+money(Math.max(t.score,0))));
+        w.append(lab);
+      });
+      ov.append(w);
+      const a=el('div','acts'); const go=el('button','btn gold','Show the clue'); go.onclick=()=>{stage='clue'; render();}; a.append(go); ov.append(a);
+    } else {
+      let revealed=stage==='answer';
+      const tm=timerBox(); ov.firstChild.append(tm.box); ov.insertBefore(tm.bar, ov.children[1]);
+      ov.append(el('div','kind','Choose the best answer'));
+      ov.append(el('p','q',f.q));
+      ov.append(optsEl({t:'mc',o:f.o,a:f.a},revealed));
+      const a=el('div','acts');
+      if(!revealed){const rv=el('button','btn gold','Show answer'); rv.onclick=()=>{stage='answer'; render();}; a.append(rv);}
+      ov.append(a);
+      if(revealed){
+        ov.append(el('div','kind','Score each team (wager is added or taken away)'));
+        const aw=el('div','award');
+        S.teams.forEach((t,i)=>{
+          const row=el('div','arow'); row.append(el('span',null,t.name+' · wager '+money(wagers[i])));
+          const up=el('button','up','+'), dn=el('button','dn','−');
+          const paint=()=>{up.className='up'+(fapplied[i]===1?' on up':''); dn.className='dn'+(fapplied[i]===-1?' on dn':'');};
+          const set=v=>{const prev=fapplied[i]||0, nv=prev===v?0:v; if(nv===1)chime(); t.score+=(nv-prev)*wagers[i]; fapplied[i]=nv; save(); renderTeams(); paint(); showWinner();};
+          up.onclick=()=>set(1); dn.onclick=()=>set(-1); paint();
+          row.append(up,dn); aw.append(row);
+        });
+        ov.append(aw);
+        const wn=el('div','winner'); wn.id='winner'; ov.append(wn); showWinner();
+      }
+    }
+  };
+  const showWinner=()=>{
+    const w=$('winner'); if(!w) return;
+    const mx=Math.max(...S.teams.map(t=>t.score)); const names=S.teams.filter(t=>t.score===mx).map(t=>t.name);
+    w.textContent='Leading: '+names.join(' & ')+' · '+money(mx);
+  };
+  render();
+}
+
+/* ---------- answer key ---------- */
+function openKey(){
+  ov.hidden=false; ov.scrollTop=0; ov.replaceChildren();
+  const head=el('div','ovhead'); head.append(el('div','tag','Host answer key (do not share this screen)'));
+  const close=el('button','btn','Close'); close.onclick=()=>{ov.hidden=true; ov.replaceChildren();}; head.append(close); ov.append(head);
+  const k=el('div','key');
+  const fmt=(c)=>{
+    const li=el('li'); li.append(el('span','kq','$'+(c.v||'')+' · '+c.q));
+    const ans=c.t==='tf'?(c.a===0?'TRUE':'FALSE'):L[c.a]+'. '+c.o[c.a];
+    li.append(document.createElement('br'), el('span','ka','Answer: '+ans)); return li;
+  };
+  DATA.cats.forEach(c=>{const s=el('section'); s.append(el('h3',null,c.ch+' · '+c.name)); const ol=el('ol'); c.clues.forEach(x=>ol.append(fmt(x))); s.append(ol); k.append(s);});
+  const s=el('section'); s.append(el('h3',null,'Final Jeopardy · '+DATA.final.name)); const ol=el('ol'); ol.append(fmt({v:'',t:'mc',q:DATA.final.q,o:DATA.final.o,a:DATA.final.a})); s.append(ol); k.append(s);
+  ov.append(k);
+}
+
+/* ---------- wiring ---------- */
+$('keyBtn').onclick=openKey;
+$('finalBtn').onclick=openFinal;
+let confirmT=null;
+$('resetBtn').onclick=function(){
+  if(confirmT){clearTimeout(confirmT); confirmT=null; this.textContent='Reset game';
+    S.teams.forEach(t=>t.score=0); S.used={}; S.turn=0; save(); renderBoard(); renderTeams(); return;}
+  this.textContent='Click again to clear all scores'; confirmT=setTimeout(()=>{confirmT=null; this.textContent='Reset game';},4000);
+};
+$('tPlus').onclick=()=>{if(S.teams.length<8){S.teams.push({name:'Team '+(S.teams.length+1),score:0}); save(); renderTeams();}};
+$('tMinus').onclick=()=>{if(S.teams.length>2){S.teams.pop(); if(S.turn>=S.teams.length)S.turn=0; save(); renderTeams();}};
+$('tsec').onchange=e=>{S.secs=parseInt(e.target.value,10); save();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!ov.hidden){ if(cur) closeClue(false); else {stopTimer(); ov.hidden=true; ov.replaceChildren();}}});
+load(); $('tsec').value=String(S.secs); renderBoard(); renderTeams();
+</script>
+
+</body></html>
